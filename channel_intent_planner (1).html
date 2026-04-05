@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Channel Intent Planner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',sans-serif;background:#f4f9f7;color:#052029;min-height:100vh}
+.app{padding:1.5rem;max-width:1100px;margin:0 auto}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.hdr-t{font-size:16px;font-weight:600;letter-spacing:-.02em}
+.hdr-s{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#72b3a4}
+.btabs{display:flex;gap:6px;margin-bottom:12px}
+.bt{flex:1;padding:10px 8px;border-radius:8px;border:1.5px solid #add9c5;background:white;cursor:pointer;text-align:center;transition:all .15s;min-width:0}
+.bt:hover{border-color:#287b8b;background:#f0faf8}
+.bt.on{background:#287b8b;border-color:#053b4b}
+.bt-n{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#052029}
+.bt-s{font-size:9px;color:#72b3a4;margin-top:2px}
+.bt.on .bt-n,.bt.on .bt-s{color:white}
+.pbar{background:white;border:1px solid #cef0e7;border-radius:8px;padding:9px 14px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.pi{font-size:11px}
+.pi b{color:#287b8b;font-weight:600}
+.pdiv{width:1px;height:18px;background:#cef0e7;flex-shrink:0}
+.pers{font-size:10px;color:#388e8f;font-style:italic;flex:1;min-width:180px}
+.chrow{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.chb{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 10px;border-radius:10px;border:1.5px dashed #72b3a4;background:rgba(206,240,231,.3);flex-shrink:0;min-width:76px;cursor:pointer;transition:all .15s}
+.chb:hover{border-style:solid}
+.chb.on{background:#287b8b;border:1.5px solid #053b4b}
+.ch-i{font-size:14px;color:#287b8b;line-height:1}
+.ch-n{font-size:9px;text-align:center;line-height:1.3;color:#052029}
+.ch-p{font-size:8px;color:#388e8f}
+.chb.on .ch-i,.chb.on .ch-n,.chb.on .ch-p{color:white}
+.card{background:white;border:1px solid #add9c5;border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.sl{font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:#287b8b;border-bottom:1px dashed #cef0e7;padding-bottom:4px;margin-bottom:10px}
+.gtr{height:10px;border-radius:5px;background:linear-gradient(90deg,#ade3e3,#72b3a4 40%,#287b8b 72%,#053b4b);position:relative;margin-bottom:4px}
+.gpin{position:absolute;top:-4px;width:4px;height:18px;background:#131d0d;border-radius:2px;transform:translateX(-50%);transition:left .5s}
+.glb{display:flex;justify-content:space-between;font-size:8px;color:#72b3a4}
+.gnote{font-size:11px;background:#cef0e7;border-radius:6px;padding:7px 11px;margin-top:8px;line-height:1.5}
+.ptabs{display:flex;gap:6px;margin-bottom:12px}
+.pt{padding:5px 16px;border-radius:16px;font-size:11px;cursor:pointer;border:1px solid #add9c5;color:#287b8b;background:white;transition:all .15s}
+.pt:hover{background:#f0faf8}
+.pt.on{background:#053b4b;color:white;border-color:#053b4b}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cc{border:1px solid #e0f2eb;border-radius:8px;padding:11px;background:#fafffe}
+.cch{display:flex;align-items:flex-start;gap:7px;margin-bottom:8px}
+.ccico{width:26px;height:26px;border-radius:5px;background:#cef0e7;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:#053b4b}
+.cct{font-size:11px;font-weight:600;color:#052029;line-height:1.3}
+.ccs{font-size:9px;color:#72b3a4;margin-top:1px}
+.cclist{list-style:none;display:flex;flex-direction:column;gap:5px}
+.cclist li{font-size:10px;color:#052029;padding-left:12px;position:relative;line-height:1.55}
+.cclist li::before{content:'';position:absolute;left:1px;top:6px;width:4px;height:4px;border-radius:50%;background:#72b3a4}
+.pgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.pb{border-radius:8px;padding:10px;border:1px solid}
+.pb-l{border-color:#add9c5;background:rgba(173,217,197,.12)}
+.pb-r{border-color:#72b3a4;background:rgba(114,179,164,.1)}
+.pb-e{border-color:#287b8b;background:rgba(40,123,139,.08)}
+.pblbl{font-size:8px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;font-weight:600}
+.pb-l .pblbl{color:#5f936c}
+.pb-r .pblbl{color:#287b8b}
+.pb-e .pblbl{color:#053b4b}
+.pbtxt{font-size:10px;line-height:1.55}
+.itags{display:flex;flex-wrap:wrap;gap:5px}
+.itag{padding:3px 10px;border-radius:12px;font-size:10px;background:#cef0e7;color:#053b4b;border:1px solid #add9c5}
+.lc{border-left:3px solid #287b8b;padding:7px 11px;border-radius:0 6px 6px 0;background:rgba(206,240,231,.15);margin-bottom:6px}
+.ln{font-size:17px;font-weight:600;color:#053b4b;line-height:1}
+.ld{font-size:10px;color:#052029;margin:3px 0;line-height:1.4}
+.ls{font-size:8px;color:#72b3a4;font-style:italic}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.cgrid,.two,.pgrid{grid-template-columns:1fr}.btabs{flex-wrap:wrap}.bt{min-width:calc(50% - 4px);flex:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-t">Channel Intent Planner</div>
+    <div class="hdr-s">Select brand, then channel</div>
+  </div>
+  <div class="btabs" id="btabs"></div>
+  <div class="pbar" id="pbar"></div>
+  <div class="chrow" id="chrow"></div>
+  <div id="main"></div>
+</div>
+<script>
+const BRANDS={
+  birdies:{name:'Birdies',tag:'Women / $130-200',gender:'Women',age:'28-55',price:'$130-200 / Accessible luxury',
+    persona:'Moves in elevated circles, from corporate director to luxury host. She wants to be seen by the right people and show up impeccably in every room she enters.',
+    channels:{
+      social:{intent:28,gauge:25,note:'Discovery phase. She is being inspired, not shopping yet. Trigger identity recognition before purchase desire; she needs to see herself in the brand before she considers the product.',
+        pains:{l:'She thinks her current shoes are fine and has not yet connected a better shoe to a better version of how she shows up in the world.',r:'Her feet hurt by 3pm and she is tired of trading comfort for appearance at the events that matter.',e:'She wore the wrong shoes to an important dinner and felt underdressed. She will not let that happen again.'},
+        identity:['Elevated circle member','Corporate leader','Aspirational host','Style-conscious','Efficiency seeker'],
+        lift:[{n:'+89%',d:'engagement with identity-aligned creative vs product-only posts',s:'Sprout Social, 2023'},{n:'4x',d:'higher CTR for lifestyle imagery vs white-background product shots',s:'Nielsen Consumer Trust, 2021'},{n:'+23%',d:'conversion lift when on-site hero reflects the channel creative style',s:'Shopify Commerce Trends, 2022'}]},
+      paid:{intent:75,gauge:72,note:'High intent. She is actively searching. Match her search query exactly on the landing page; do not sell what she did not search for. Message match is everything.',
+        pains:{l:'She searches occasionally but has not found a brand that feels premium enough for her standards and wearable enough for long days.',r:'She has paid for shoes that look expensive but destroy her feet by noon. She needs brand trust before committing.',e:'She has an important upcoming event and needs shoes she can completely trust. She will not experiment at this stage.'},
+        identity:['Deliberate buyer','Quality-first','Research mode','Value-discerning','Occasion-aware'],
+        lift:[{n:'+64%',d:'conversion with message-matched landing pages vs generic category pages',s:'Unbounce, 2023'},{n:'+35%',d:'CTR when ad headline matches primary search intent exactly',s:'Think with Google, 2022'},{n:'+70%',d:'brand recall when retargeted within 24 hours of a search visit',s:'Google Search Behavior Study, 2022'}]},
+      email:{intent:82,gauge:80,note:'Warm subscriber. She opted in; she wants to hear from you. Generic promotional emails will lose her permanently. Treat her like a VIP insider, not a prospect.',
+        pains:{l:'Her inbox is full. A generic promotional email from Birdies will be deleted without opening.',r:'She has been meaning to treat herself but keeps pushing it back. The right email at the right moment could close it.',e:'She has a major event coming up and is under time pressure. She needs the right shoe fast.'},
+        identity:['VIP subscriber','Early adopter','Curated taste','Loyal to brands that understand her','Event-driven buyer'],
+        lift:[{n:'+50%',d:'purchase rate from behavioral trigger emails vs standard batch sends',s:'Klaviyo, 2023'},{n:'+26%',d:'open rate from identity-first subject lines vs promotional subject lines',s:'Campaign Monitor, 2023'},{n:'3x',d:'lifetime value for customers acquired via email vs paid channels',s:'Bain and Company'}]},
+      organic:{intent:55,gauge:52,note:'Research phase. She is educating herself before buying. Win her trust before trying to sell. Be the authority in her world, not just the store.',
+        pains:{l:'She is casually exploring and does not yet know Birdies exists or that it solves her specific problem.',r:'She has been searching for shoes that work for her demanding schedule and is frustrated by options that sacrifice either comfort or style.',e:'She has an important upcoming event, no footwear solution, and limited time to make a confident decision.'},
+        identity:['Self-educator','Research-first buyer','Quality seeker','Occasion planner','Detail-oriented'],
+        lift:[{n:'6x',d:'higher conversion for organic content visitors vs cold paid traffic',s:'HubSpot, 2023'},{n:'+55%',d:'time on site for editorial brand content vs standard product pages',s:'Content Marketing Institute, 2022'},{n:'+31%',d:'email capture rate with style-quiz gating vs standard newsletter pop-up',s:'Privy, 2023'}]},
+      influencer:{intent:42,gauge:40,note:'Aspiration-discovery phase. She trusts the creator before she trusts the brand. Let the creator do the selling; your job is to support the story she is already telling.',
+        pains:{l:'She admires the creator\'s lifestyle but has not yet connected the shoes to her own need or identity.',r:'She noticed the creator wore these to an occasion she relates to and realized her current shoes would not hold up.',e:'She has seen Birdies on multiple creators she follows and is afraid she is the last in her circle to discover them.'},
+        identity:['Community follower','Aspiration mirror','Social validator','Trust-through-peer buyer','Trend-aware'],
+        lift:[{n:'60%',d:'higher engagement for micro-influencer content vs macro celebrity endorsements',s:'Later, 2023'},{n:'11x',d:'ROI for authentic influencer content vs traditional display advertising',s:'IMH, 2023'},{n:'+25%',d:'PDP conversion lift when creator content is embedded directly on product pages',s:'Nosto, 2022'}]},
+      direct:{intent:92,gauge:90,note:'Your highest-value customer. She already knows and loves the brand. Any friction or generic treatment risks breaking an earned, loyalty-driven relationship.',
+        pains:{l:'She is not in pain. She is loyal. Any misstep such as a generic email or no recognition could quietly break the relationship.',r:'She came back because she loves the brand but expects to feel recognized. A generic experience signals the brand does not value her.',e:'She recommended Birdies to her elevated circle. If her experience declines, she stops recommending and eventually stops buying.'},
+        identity:['Brand devotee','VIP insider','Style authority','Community ambassador','Loyalty-driven'],
+        lift:[{n:'+67%',d:'average order value from repeat customers vs first-time buyers',s:'Bain and Company'},{n:'+25%',d:'AOV with personalized returning visitor homepage vs generic',s:'Dynamic Yield, 2022'},{n:'3x',d:'lifetime value for loyalty program members vs non-members',s:'Salesforce, 2023'}]}
+    }
+  },
+  taft:{name:'Taft',tag:'Men / $250-450',gender:'Men',age:'28-55',price:'$250-450 / Accessible luxury',
+    persona:'Bold, intentional dresser who values handmade European craftsmanship and distinctive colorways. He wears shoes as a statement of taste; not everyone notices, but the right ones do.',
+    channels:{
+      social:{intent:30,gauge:27,note:'Discovery through craft and identity content. He is not browsing for shoes; he encounters Taft through content that respects his taste and rewards attention to detail.',
+        pains:{l:'He buys from his usual brands and has not discovered that a brand built around his specific level of taste and boldness exists.',r:'He is tired of seeing the same shoes on every man in the room. He wants something that sets him apart without being loud.',e:'He showed up to an important event in generic dress shoes and noticed other men wearing distinctive, handmade footwear. He felt average.'},
+        identity:['Taste authority','Craft appreciator','Bold but refined','Distinction seeker','Quiet status signaler'],
+        lift:[{n:'+89%',d:'engagement rate for craft-story content vs standard product photography',s:'Sprout Social, 2023'},{n:'4.2x',d:'higher save and share rate for behind-the-scenes manufacturing content',s:'Later, 2023'},{n:'+31%',d:'brand recall lift for artisan origin storytelling vs lifestyle-only campaigns',s:'Nielsen, 2022'}]},
+      paid:{intent:72,gauge:70,note:'He searched with clear intent. He knows what he wants; do not lead with generic copy. Lead with craft, origin, and distinction above all else.',
+        pains:{l:'He searches periodically for quality footwear but has not found a brand that matches both his taste and his willingness to invest.',r:'He has bought expensive shoes that did not deliver on quality. He needs authentic proof before committing at this price point.',e:'He is comparing Taft vs a European heritage brand and needs a concrete reason to choose Taft. He will buy today if convinced.'},
+        identity:['Intentional buyer','Craft-first mindset','Comparison shopping mode','Price-tolerant for proven quality','Occasion-driven'],
+        lift:[{n:'+64%',d:'conversion with message-matched landing pages vs generic category pages',s:'Unbounce, 2023'},{n:'+42%',d:'CTR when ad leads with craft or origin story vs standard product feature',s:'Think with Google, 2022'},{n:'+38%',d:'ROAS improvement with artisan proof points shown above the fold',s:'Shogun, 2023'}]},
+      email:{intent:80,gauge:78,note:'He subscribed because he is interested in craft and new releases. Lead with colorway stories and exclusive access. He does not respond to promotional framing.',
+        pains:{l:'His inbox is full of generic brand emails. Taft has exactly one chance per email to prove it respects his intelligence.',r:'He has been eyeing a specific colorway but has not pulled the trigger. The right story email at the right moment could close it.',e:'He wants first access to limited colorways. If someone in his circle gets a pair he wanted, he will always feel like he missed out.'},
+        identity:['Craft collector','Colorway hunter','Early access seeker','Discerning subscriber','Pride of ownership'],
+        lift:[{n:'+50%',d:'purchase rate from craft-story trigger emails vs promotional batch sends',s:'Klaviyo, 2023'},{n:'+34%',d:'click rate when subject line features a new colorway or exclusive release',s:'Campaign Monitor, 2023'},{n:'2.8x',d:'LTV for customers acquired through editorial email vs promotion',s:'Retention Science, 2022'}]},
+      organic:{intent:58,gauge:56,note:'He is researching quality and craftsmanship in depth. He wants to understand exactly what makes Taft worth the price before he commits. Educate him thoroughly; he will reward it.',
+        pains:{l:'He is comparing Taft to European heritage brands and does not yet see why Taft belongs in that conversation.',r:'He wants to fully understand the construction quality before making a significant purchase.',e:'He has been burned by expensive shoes that fell apart. He needs to trust the manufacturing story completely before spending $350 or more.'},
+        identity:['Deep researcher','Craft-educated buyer','Quality comparator','Detail obsessive','Trust-before-buy mindset'],
+        lift:[{n:'6x',d:'higher conversion from educational content visitors vs cold paid traffic',s:'HubSpot, 2023'},{n:'+68%',d:'time on site for manufacturing or craft content vs standard product pages',s:'Content Marketing Institute, 2022'},{n:'+29%',d:'conversion lift when construction methodology is shown with detailed photography',s:'Shogun, 2023'}]},
+      influencer:{intent:38,gauge:36,note:'He discovers Taft through menswear creators he already respects. Credibility transfer from creator to brand is the entire mechanism here; do not shortcut it.',
+        pains:{l:'He follows menswear creators for inspiration and has not been introduced to Taft as a brand worthy of his taste.',r:'He noticed the creator\'s footwear and recognized it as the level of craft and boldness he has been searching for.',e:'He has seen Taft on two creators he respects and does not want to be the last well-dressed man in his circle to discover it.'},
+        identity:['Style student','Credibility follower','Menswear enthusiast','Craft-curious','Peer-aware buyer'],
+        lift:[{n:'60%',d:'higher engagement for menswear micro-influencer vs macro celebrity content',s:'Later, 2023'},{n:'11x',d:'ROI from authentic craft-story creator content vs display advertising',s:'IMH, 2023'},{n:'+22%',d:'PDP conversion when creator unboxing content is embedded on product pages',s:'Nosto, 2022'}]},
+      direct:{intent:91,gauge:89,note:'He collects Taft. Give him first access to new colorways and he will buy every time. Recognition and exclusivity are the entire value exchange.',
+        pains:{l:'He is loyal but the relationship is fragile if he is treated like a new customer on a return visit.',r:'He came back specifically for a new colorway. If it is hard to find, his frustration will outlast the purchase.',e:'He has recommended Taft to men he respects. If his loyalty goes unrecognized, his advocacy and eventually his buying stops.'},
+        identity:['Taft collector','Colorway devotee','Style authority','Brand ambassador','First-access expecter'],
+        lift:[{n:'+67%',d:'AOV from repeat buyers vs first-time buyers',s:'Bain and Company'},{n:'2.9x',d:'purchase frequency for customers with colorway waitlist history',s:'Klaviyo, 2023'},{n:'+25%',d:'AOV with personalized return visitor homepage vs generic',s:'Dynamic Yield, 2022'}]}
+    }
+  },
+  vance:{name:'Vance',tag:'Men / $100-200',gender:'Men',age:'25-50',price:'$100-200 / Smart everyday value',
+    persona:'He wants to look good without overthinking it. Nice shoes for work, weekends, and date night. Ideally something his partner will not ask him to change before they leave.',
+    channels:{
+      social:{intent:22,gauge:20,note:'He is not actively shopping. He encounters Vance through relatable content about looking put-together with minimal effort. Reach him through versatility and everyday relatability.',
+        pains:{l:'He buys whatever shoes look acceptable and has not considered whether a better solution for his actual lifestyle exists.',r:'He has shoes for work and shoes for the weekend but nothing that bridges both convincingly. In-between occasions are a quiet frustration.',e:'He showed up underdressed to an event and his partner pointed it out. He wants that to never happen again without having to overthink it.'},
+        identity:['Practical style seeker','Occasion versatility','Partner-approval seeker','Effortless dresser','Value-conscious'],
+        lift:[{n:'+89%',d:'engagement for outfit versatility content vs product-only posts',s:'Sprout Social, 2023'},{n:'3.4x',d:'higher save rate for "one shoe, multiple occasions" styling content',s:'Later, 2023'},{n:'+19%',d:'brand recall from relatable aspirational content vs luxury-adjacent creative',s:'Nielsen, 2022'}]},
+      paid:{intent:68,gauge:66,note:'He searched with a specific practical need. Give him the answer fast and clearly. He does not want to work hard to find what he is looking for; friction kills the conversion.',
+        pains:{l:'He searches occasionally but has not committed to a brand that consistently solves his needs.',r:'He has bought shoes that looked good in photos but fit badly or fell apart quickly. He needs visible quality proof.',e:'He has an event coming up and needs specific shoes fast. He wants an easy, confident decision with quick delivery.'},
+        identity:['Practical buyer','Function-first','Convenience seeker','Trust through clarity','Occasion-specific shopper'],
+        lift:[{n:'+64%',d:'conversion with occasion-specific landing pages vs generic category pages',s:'Unbounce, 2023'},{n:'+28%',d:'CTR when ad copy emphasizes versatility and occasion range',s:'Think with Google, 2022'},{n:'+41%',d:'purchase rate when free shipping and easy returns are shown in ad creative',s:'Shopper.com, 2022'}]},
+      email:{intent:78,gauge:76,note:'He subscribed but is not a devoted brand follower. Practical, occasion-relevant emails earn clicks. Anything generic or aspirational will be ignored instantly.',
+        pains:{l:'He subscribed but barely reads brand emails. He needs an immediately obvious reason why this email matters to him.',r:'He has been meaning to pick up new shoes but keeps putting it off. A well-timed practical email could be the nudge he needs.',e:'He has an upcoming event and just realized he does not have the right shoes. He needs a fast, confident decision in the next 48 hours.'},
+        identity:['Convenience buyer','Occasion-prompted shopper','Low-maintenance style','Practical newsletter reader','Value-responsive'],
+        lift:[{n:'+50%',d:'purchase rate from occasion-triggered emails vs standard promotions',s:'Klaviyo, 2023'},{n:'+26%',d:'open rate when subject line references a specific life occasion',s:'Campaign Monitor, 2023'},{n:'+33%',d:'conversion when email features outfit styling organized by occasion type',s:'Dotdigital, 2022'}]},
+      organic:{intent:52,gauge:50,note:'He found Vance while comparing options. Give him clear, practical decision-making content. The goal is to make the choice feel obvious and the confidence easy to reach.',
+        pains:{l:'He searched "versatile men\'s shoes" and is comparing several options. He does not know what makes one genuinely better for his life.',r:'He has bought the wrong shoe before, too formal or too casual for the range of occasions he needs to cover.',e:'He is actively trying to fill a wardrobe gap and wants to make one confident decision today, not keep researching.'},
+        identity:['Practical researcher','Decision simplifier','One-and-done buyer','Versatility seeker','Comparison shopper'],
+        lift:[{n:'6x',d:'higher conversion from organic content vs cold paid for considered purchases',s:'HubSpot, 2023'},{n:'+44%',d:'conversion when occasion-use-case grids are shown on product pages',s:'Shogun, 2023'},{n:'+29%',d:'AOV when complementary product pairings are shown on the product page',s:'Nosto, 2022'}]},
+      influencer:{intent:35,gauge:33,note:'He discovers Vance through relatable male lifestyle creators, not fashion influencers. Real-guy credibility and practical relatability are the entire bridge to purchase.',
+        pains:{l:'He follows everyday lifestyle content and has not been introduced to Vance as a solution to his specific footwear gap yet.',r:'He saw the creator wearing these in a real work-to-weekend context and recognized his own need for the first time.',e:'He is tired of the low-level stress of not having the right shoes for different occasions and wants one brand that solves it.'},
+        identity:['Relatable style learner','Practical fashion follower','Real-guy aspiration','Low-effort dresser','Creator trust-transfer'],
+        lift:[{n:'60%',d:'higher engagement for everyday relatable vs luxury aspirational creator content',s:'Later, 2023'},{n:'11x',d:'ROI from authentic everyday-use creator content vs display advertising',s:'IMH, 2023'},{n:'+18%',d:'conversion when creator shows shoe across 3 real occasions in one video',s:'Dash Social, 2023'}]},
+      direct:{intent:88,gauge:86,note:'He came back on his own. Make reordering frictionless and show him what is new in his style. He earned this experience; do not make him work for it.',
+        pains:{l:'He had a good first experience. If the second purchase feels difficult or impersonal, he will not return.',r:'He wants to buy again but needs to find what he needs quickly; too much friction and he quietly moves on.',e:'He recommended Vance to a friend or partner. If his next experience falls short, he loses confidence in his own recommendation.'},
+        identity:['Satisfied repeat buyer','Convenience-first','Trust established','Word-of-mouth sharer','Effortless return shopper'],
+        lift:[{n:'+67%',d:'AOV from repeat vs first-time buyers',s:'Bain and Company'},{n:'+22%',d:'repeat purchase rate with "based on your last purchase" personalized homepage',s:'Dynamic Yield, 2022'},{n:'2.1x',d:'LTV for customers who make a second purchase within 60 days',s:'Klaviyo, 2023'}]}
+    }
+  },
+  journee:{name:'Journee',tag:'Women / $30-99',gender:'Women',age:'18-40',price:'$30-99 / Trend-forward value',
+    persona:'She wants to look like she spent more than she did. Trend-forward styling is her love language. She discovers through TikTok and Instagram and wants to be perceived as someone with real fashion taste.',
+    channels:{
+      social:{intent:20,gauge:18,note:'Pure discovery mode. She is scrolling, not shopping. Stop her feed with aspirational styling then create genuine curiosity about the price. The price reveal is the hook.',
+        pains:{l:'She is inspired by fashion content but assumes the good-looking pieces are out of her budget. She has not found the affordable alternative yet.',r:'She has bought cheap shoes before that looked great in photos but felt or looked cheap in person.',e:'She showed up to an event and felt underdressed next to women whose looks she could not afford. She wants to close that gap.'},
+        identity:['Trend-first buyer','Affordable aspirational','Social proof buyer','Perceived luxury seeker','Discovery-mode shopper'],
+        lift:[{n:'+96%',d:'engagement rate for price-reveal format vs standard product posts',s:'Dash Social, 2023'},{n:'4.8x',d:'higher share and save rate for trend-to-price-reveal content',s:'Later, 2023'},{n:'+28%',d:'conversion from short-form video vs static carousel for Gen Z and Millennial audiences',s:'Meta Ad Benchmarks, 2023'}]},
+      paid:{intent:65,gauge:62,note:'She clicked on an ad that promised style for less. Deliver on that promise in the first three seconds on the landing page: clear price, visible style, immediate social proof.',
+        pains:{l:'She clicks on fashion ads regularly but rarely converts because the price disappoints or the quality looks cheap up close.',r:'She found Journee in an ad and is interested but needs social proof to trust the quality before adding to cart.',e:'She has an upcoming event, a tight budget, and is actively searching for the right shoe. She needs to decide today.'},
+        identity:['Value-responsive buyer','Style-on-a-budget seeker','Ad-to-purchase converter','Social proof dependent','Urgency-responsive shopper'],
+        lift:[{n:'+71%',d:'conversion when price is shown in the first 3 seconds of ad creative',s:'Meta Benchmarks, 2023'},{n:'+45%',d:'CTR when UGC creative is used vs brand-produced ad creative',s:'Nielsen, 2021'},{n:'+38%',d:'conversion from "as seen on TikTok" social proof signal on landing pages',s:'Shogun, 2023'}]},
+      email:{intent:72,gauge:70,note:'She likely subscribed for a discount or new-arrival alert. Keep her engaged with trend content that makes her feel like a style insider, not a recipient of promotional emails.',
+        pains:{l:'She subscribed for a one-time offer and will unsubscribe fast if the emails feel generic or purely promotional.',r:'She is aware of trends but does not always know how to find affordable versions quickly. A timely trend email is genuinely useful.',e:'She has an event coming up and is actively looking for the right shoes. A relevant email in this exact window could drive an immediate purchase.'},
+        identity:['Trend alert subscriber','Discount-entry buyer','Style insider seeker','Fast fashion responsive','Occasion-driven shopper'],
+        lift:[{n:'+50%',d:'purchase rate from trend-alert emails vs standard promotional messages',s:'Klaviyo, 2023'},{n:'+33%',d:'open rate for "trending now" and "this just dropped" subject lines',s:'Campaign Monitor, 2023'},{n:'+29%',d:'click rate when email features styling organized by specific occasion type',s:'Dotdigital, 2022'}]},
+      organic:{intent:48,gauge:45,note:'She is searching for style inspiration or a specific affordable look. Connect her trend-based search directly to a Journee product that fulfills it with visible proof.',
+        pains:{l:'She is browsing Pinterest or searching "party heels under $60" and has not yet found Journee in the results.',r:'She has found options but is not confident they will look as elevated in person as they do in photos. Reviews and real-person styling are critical.',e:'She has an event coming up, a specific look in mind, and a hard budget ceiling. She needs to find the right shoe in the next hour.'},
+        identity:['Trend searcher','Budget-conscious style seeker','Review-dependent buyer','Occasion-specific shopper','Visual inspiration browser'],
+        lift:[{n:'6x',d:'higher conversion from organic content visitors vs cold paid traffic',s:'HubSpot, 2023'},{n:'+52%',d:'conversion when outfit styling grid is shown on PDP for trend-focused shoppers',s:'Nosto, 2022'},{n:'+35%',d:'time on site for editorial trend content vs standard product pages',s:'CMI, 2022'}]},
+      influencer:{intent:32,gauge:30,note:'Her primary discovery channel. TikTok and Instagram creators she trusts drive more purchase intent than any other source. This is where Journee wins or loses the customer.',
+        pains:{l:'She loves the creator\'s style but automatically assumes she cannot afford what the creator wears. The price reveal is the entire conversion hook.',r:'She watched the creator\'s video and recognized the exact occasion she needs shoes for. Style resonates and the price removed her final barrier.',e:'She has seen this style on multiple creators and the FOMO is building. She does not want to show up to an event without what everyone is wearing.'},
+        identity:['Creator-trust buyer','TikTok discovery shopper','FOMO-driven','Peer aspiration follower','Trend-first identity'],
+        lift:[{n:'72%',d:'of Gen Z and Millennial women report discovering fashion primarily via social creator content',s:'eMarketer, 2023'},{n:'11x',d:'ROI from authentic creator content vs traditional display advertising',s:'IMH, 2023'},{n:'+41%',d:'conversion when creator video is embedded directly on product pages',s:'Nosto, 2022'}]},
+      direct:{intent:85,gauge:83,note:'She came back, likely for a new trend or a replacement. Move fast, show her what is new, and reward her loyalty with a trend pick she did not know she needed.',
+        pains:{l:'She had a great first experience but Journee must stay relevant in her style feed or she will shop elsewhere by next season.',r:'She wants to find her next great find quickly. If the site feels cluttered or hard to navigate, she will bounce.',e:'She recommended Journee to friends after her first purchase. If her next experience falls short, so does her advocacy.'},
+        identity:['Trend repeat buyer','New-arrival first mover','Style community sharer','Fast-fashion loyal','Find-it-fast shopper'],
+        lift:[{n:'+67%',d:'AOV from repeat buyers vs first-time buyers',s:'Bain and Company'},{n:'+24%',d:'repeat purchase rate with "new arrivals in your style" personalized email sequence',s:'Klaviyo, 2023'},{n:'2.3x',d:'LTV for customers acquired via social creator vs paid social ad',s:'Retention Science, 2022'}]}
+    }
+  }
+};
+
+const CHANNELS=[
+  {id:'social',ico:'&#9672;',name:'Social media',sub:'Discovery'},
+  {id:'paid',ico:'&#9673;',name:'Paid search',sub:'High intent'},
+  {id:'email',ico:'&#9678;',name:'Email / CRM',sub:'Warm lead'},
+  {id:'organic',ico:'&#9671;',name:'Organic / SEO',sub:'Research'},
+  {id:'influencer',ico:'&#9670;',name:'Influencer',sub:'Trust-first'},
+  {id:'direct',ico:'&#9675;',name:'Direct visit',sub:'VIP intent'}
+];
+
+const CREATIVE={
+  pre:[
+    {ic:'FMT',t:'Creative format',s:'What to produce and where to run it',b:['Match format to intent level: low-intent channels (social, influencer) need lifestyle and identity-first content; high-intent channels (paid search, email) need product-forward creative with immediate proof','Use video for discovery channels (social, influencer): 8 to 20 seconds, emotion or identity hook in the first 3 seconds, product as the natural conclusion of the story','Use static or carousel for search and email: the message should be readable in under 2 seconds without sound or animation','For email collection goals, lead with curiosity or a compelling editorial promise such as a style guide, quiz result, or exclusive access; never lead with a discount for an aspirational brand']},
+    {ic:'VIS',t:'Visual direction',s:'What the image or video should show',b:['Identity-mirror imagery outperforms product-isolation photography by 4x for click-through rate (Nielsen, 2021); the person in the creative should look like the customer\'s aspirational self, not a gap she cannot close','Scene-based photography: show the product in the specific context the customer needs it for (boardroom exit, weekend brunch, a night out); the occasion should be immediately recognizable','For craft or quality brands: lead with material or construction detail before lifestyle; the craft shot earns the aspiration. For trend or value brands: lead with the finished styled look, then reveal the price','Color palette and styling in the creative should match or intentionally echo the on-site experience; a disconnect between ad creative and landing page reduces conversion by 23% (Shopify, 2022)']},
+    {ic:'COPY',t:'Copy and message angle',s:'The psychological hook that earns the click',b:['Identity before product at low-intent stages: speak to who she becomes or how she is perceived, not to what the shoe is made of','Pain state matching: use latent pain language in discovery channels ("tired of shoes that look great but hurt by noon") and realized pain language in search ads ("all-day comfort heels that actually work")','For email collection conversion goals, use curiosity triggers: "The styling secret women in [aspirational group] already know" outperforms generic newsletter prompts by 31% (Privy, 2023)','Never use "affordable," "cheap," or "budget" in copy for value brands; use specific price anchors instead ("under $60," "less than your last manicure") to reframe value as smart, not low-end']},
+    {ic:'CTA',t:'CTA and entry point',s:'Where to send her and what she should do first',b:['Match landing destination to intent level: low-intent visitors (social, influencer) should land on editorial or lookbook pages; high-intent visitors (paid search) must land on the exact product or sub-collection from the ad','For email capture goals: present the signup as access to something she actually wants such as a styling guide, early access, or quiz result; treat it as a value exchange, not a form to fill out','CTA copy should match the creative promise exactly: if the ad said "see the collection," the button should say "see the collection," not "shop now"','One CTA per ad or email; multiple competing calls to action reduce click-through rate by 42% (Campaign Monitor, 2023)']}
+  ],
+  during:[
+    {ic:'HRO',t:'Above the fold',s:'The first thing she sees on site',b:['Message match is the single highest-impact on-site conversion lever: the headline or hero image must reflect the exact promise made in the channel that brought her; mismatch here loses 64% of visitors (Unbounce, 2023)','For identity-driven channels (social, influencer): hero should be lifestyle or person-first; product appears in context, not isolated on a white background','For intent-driven channels (paid search, email): hero should lead with the specific benefit or product category from her search or email subject line; get to the product fast','Show price, return policy, and size availability above the fold or in the first scroll; removing these friction points increases add-to-cart rate by 41% (Baymard Institute, 2022)']},
+    {ic:'PRF',t:'Social proof placement',s:'What validation signals to show and where',b:['Place the most relevant review or testimonial above the add-to-cart button on every product detail page; reviews shown near the buy button increase conversion by 34% vs reviews shown only at the bottom of the page (BrightLocal, 2023)','Match the type of proof to the buyer: for aspirational buyers show occasion-based or identity-based reviews ("wore these to my board presentation"); for practical buyers show use-case or durability reviews ("wore these all day, zero issues")','UGC (real customer photos) shown on product pages outperforms brand photography for conversion with first-time visitors by 29% (Nosto, 2022); embed it near the product images, not only in a gallery at the bottom','For creator or influencer traffic: embed the creator\'s content or quote directly on the product page; the trust transfer from creator to brand must be visible on the page the visitor lands on']},
+    {ic:'MSG',t:'On-page messaging and CTAs',s:'Copy, navigation, and page experience',b:['Navigation for low-intent social visitors: "Shop by occasion" or "Find your style" as the primary entry point outperforms a generic product grid by reducing decision paralysis','Product description hierarchy for aspirational brands: lead with the occasion and identity benefit, then support with comfort or quality details, then mention materials last; inverse this order for research-led buyers','For email collection on the product page: present email capture as "Get early access" or a style quiz above the main product grid; this converts at 31% higher than a generic newsletter pop-up (Privy, 2023)','Wishlist and "notify me for my size" should be as visually prominent as "add to cart" for first-time visitors; not every visitor is ready to buy, and capturing her keeps her in the funnel']},
+    {ic:'CNV',t:'Conversion path',s:'Friction removal and purchase flow',b:['Every extra click between product discovery and checkout reduces conversion by 10 to 20% (Baymard, 2022); minimize navigation steps, pre-fill size if known, and show free returns in the button area itself','For returning visitors: surface saved cart, saved size, and past purchases immediately; personalized return visits increase AOV by 25% (Dynamic Yield, 2022)','Free returns shown in the checkout flow (not just the footer) reduces cart abandonment by 18% (Baymard Institute, 2022)','Urgency signals must be genuine: low-stock notifications in true size only, not sitewide; manufactured scarcity destroys trust with high-intent repeat buyers']}
+  ],
+  post:[
+    {ic:'RTG',t:'Retarget creative',s:'What to show her after she leaves without buying',b:['Retarget within 24 hours of the site visit while purchase intent is highest; conversion rate drops 70% after 48 hours of inactivity (Google Search Behavior Study, 2022)','Match retarget creative to the channel tone she came from: editorial lifestyle creative for social visitors; direct product creative for paid search visitors; never show a white-background product photo to someone who discovered the brand through aspirational lifestyle content','Show the specific product she viewed, styled in an occasion context; generic brand retarget ads convert at 3.5x lower rates than product-specific retarget (Meta, 2022)','Sequence the retarget: Touch 1 (within 24h) is the product in context. Touch 2 (day 3) is editorial or styling content that adds value. Touch 3 (day 7) is a soft offer or scarcity signal only if genuinely warranted']},
+    {ic:'EML',t:'Recovery email',s:'Subject line, content, and timing',b:['Recovery email subject line hierarchy by brand tier: aspirational brands lead with identity ("You have taste. These are still here."); practical brands lead with utility ("These work for every occasion on your calendar. Still in your size."); value brands lead with urgency ("Selling fast. Your size is still available.")','Recovery email hero image should be lifestyle or editorial, not a white-background product shot; the product-in-context image is the continuation of the story she responded to before','Never open a recovery email with "You forgot something in your cart"; it is the most over-used and lowest-converting subject line format in ecommerce (Klaviyo, 2023)','Recovery email timing: send at the 4 to 6 hour mark, not immediately; sending within 60 minutes of an abandoned cart signals surveillance and reduces trust for aspirational brands']},
+    {ic:'SEQ',t:'Post-visit sequence',s:'The 3-touch strategy after a non-converting visit',b:['Touch 1 within 24 hours: product-specific retarget in the channel where she first discovered the brand','Touch 2 at day 3: value-add email with styling content, occasion guide, or an editorial reason to return; this touch should feel like a gift, not a sales follow-up','Touch 3 at day 7: introduce a soft reason to act now; for aspirational or craft brands this means scarcity or exclusivity framing; for trend brands this means FOMO or new arrivals; for practical brands this means a free shipping or convenience offer','End the sequence here; over-messaging a non-converting visitor after 7 days causes list fatigue and damages brand trust; pause for 30 days before any re-engagement attempt']},
+    {ic:'LTV',t:'Post-purchase LTV building',s:'How to turn a first purchase into lifetime value',b:['Post-purchase email should feel like a VIP welcome, not an order receipt; include a styling suggestion, care guide, or community welcome that adds perceived value beyond the transaction','The 60-day email is the highest-leverage LTV touchpoint: customers who make a second purchase within 60 days have 2.1 to 2.9x higher lifetime value (Klaviyo, 2023); trigger a "what to pair with your purchase" email at 30 days','Referral prompt at day 45 to 60 outperforms immediate post-purchase referral by 38%; frame referral as sharing something valuable with someone in her circle, not as a discount mechanic for herself','Win-back strategy at 90+ days of inactivity: lead with new arrivals or new reasons to return, not with a discount; new product or editorial content wins back aspirational customers at 34% higher rate than promotional offers (Klaviyo, 2023)']}
+  ]
+};
+
+const CHANS=['social','paid','email','organic','influencer','direct'];
+let brand='birdies',channel='social',phase='pre';
+
+function getBrand(){return BRANDS[brand];}
+function getCh(){return BRANDS[brand].channels[channel];}
+
+function buildBrandTabs(){
+  document.getElementById('btabs').innerHTML=Object.entries(BRANDS).map(([id,b])=>
+    `<div class="bt${brand===id?' on':''}" onclick="selBrand('${id}')">
+      <div class="bt-n">${b.name}</div>
+      <div class="bt-s">${b.tag}</div>
+    </div>`
+  ).join('');
+}
+
+function buildPbar(){
+  const b=getBrand();
+  document.getElementById('pbar').innerHTML=`
+    <div class="pi"><b>${b.gender}</b></div><div class="pdiv"></div>
+    <div class="pi">Ages <b>${b.age}</b></div><div class="pdiv"></div>
+    <div class="pi"><b>${b.price}</b></div><div class="pdiv"></div>
+    <div class="pers">${b.persona}</div>`;
+}
+
+function buildChrow(){
+  document.getElementById('chrow').innerHTML=CHANNELS.map(ch=>{
+    const cd=BRANDS[brand].channels[ch.id];
+    return `<div class="chb${channel===ch.id?' on':''}" onclick="selChannel('${ch.id}')">
+      <div class="ch-i">${ch.ico}</div>
+      <div class="ch-n">${ch.name}</div>
+      <div class="ch-p">${cd.intent}% intent</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCards(cards){
+  return `<div class="cgrid">${cards.map(c=>`
+    <div class="cc">
+      <div class="cch">
+        <div class="ccico">${c.ic}</div>
+        <div><div class="cct">${c.t}</div><div class="ccs">${c.s}</div></div>
+      </div>
+      <ul class="cclist">${c.b.map(b=>`<li>${b}</li>`).join('')}</ul>
+    </div>`).join('')}</div>`;
+}
+
+function buildMain(){
+  const cd=getCh();
+  document.getElementById('main').innerHTML=`
+    <div class="card">
+      <div class="sl">Purchase intent on arrival</div>
+      <div class="gtr"><div class="gpin" style="left:${cd.gauge}%"></div></div>
+      <div class="glb"><span>Low</span><span>Medium</span><span>High</span></div>
+      <div class="gnote">${cd.note}</div>
+    </div>
+    <div class="card">
+      <div class="sl">Creative guidelines by visit phase</div>
+      <div class="ptabs">
+        <div class="pt${phase==='pre'?' on':''}" onclick="selPhase('pre')">Pre-visit</div>
+        <div class="pt${phase==='during'?' on':''}" onclick="selPhase('during')">During visit</div>
+        <div class="pt${phase==='post'?' on':''}" onclick="selPhase('post')">Post-visit</div>
+      </div>
+      <div id="cOut">${renderCards(CREATIVE[phase])}</div>
+    </div>
+    <div class="card">
+      <div class="sl">Pain state examples by awareness level</div>
+      <div class="pgrid">
+        <div class="pb pb-l"><div class="pblbl">Latent pain</div><div class="pbtxt">${cd.pains.l}</div></div>
+        <div class="pb pb-r"><div class="pblbl">Realized pain</div><div class="pbtxt">${cd.pains.r}</div></div>
+        <div class="pb pb-e"><div class="pblbl">Extreme pain</div><div class="pbtxt">${cd.pains.e}</div></div>
+      </div>
+    </div>
+    <div class="two">
+      <div class="card">
+        <div class="sl">Identity and emotion triggers</div>
+        <div class="itags">${cd.identity.map(t=>`<span class="itag">${t}</span>`).join('')}</div>
+      </div>
+      <div class="card">
+        <div class="sl">Potential lift by channel with sources</div>
+        ${cd.lift.map(l=>`<div class="lc"><div class="ln">${l.n}</div><div class="ld">${l.d}</div><div class="ls">${l.s}</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function selBrand(id){brand=id;buildBrandTabs();buildPbar();buildChrow();buildMain();}
+function selChannel(id){channel=id;buildChrow();buildMain();}
+function selPhase(p){
+  phase=p;
+  document.querySelectorAll('.pt').forEach(el=>{
+    const t=el.textContent.toLowerCase();
+    el.classList.toggle('on',(p==='pre'&&t.startsWith('pre'))||(p==='during'&&t.startsWith('dur'))||(p==='post'&&t.startsWith('post')));
+  });
+  document.getElementById('cOut').innerHTML=renderCards(CREATIVE[phase]);
+}
+
+buildBrandTabs();buildPbar();buildChrow();buildMain();
+</script>
+</body>
+</html>
